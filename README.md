@@ -31,7 +31,8 @@ websocket url and user id is not public.
 When he will public them, I update this README
 
 # customize
-You can use custom key instead of h/j/k/l/space by writing config.json
+You can use custom key instead of h/j/k/l/space by writing `config.json`
+Please save the file in current directory
 
 ```
 {
