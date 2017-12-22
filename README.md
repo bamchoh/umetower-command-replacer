@@ -29,3 +29,18 @@ $ umetower-command-replacer <websocket url> <user id>
 
 websocket url and user id is not public.
 When he will public them, I update this README
+
+# customize
+You can use custom key instead of h/j/k/l/space by writing config.json
+
+```
+{
+  "down": ",",
+  "up": "i",
+  "left": "j",
+  "right": "l",
+  "block": "k"
+}
+```
+
+
