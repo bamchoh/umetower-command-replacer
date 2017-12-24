@@ -18,6 +18,12 @@ var (
 	DefaultLeftKey  = "h"
 	DefaultRightKey = "l"
 	DefaultBlockKey = " "
+
+	UpCode    = '8'
+	DownCode  = '2'
+	LeftCode  = '4'
+	RightCode = '6'
+	BlockCode = '5'
 )
 
 type config struct {
@@ -38,27 +44,39 @@ func getRuneKey(key string, defaultKey string) rune {
 
 func setUp(mapper map[rune]rune, key string) {
 	runekey := getRuneKey(key, DefaultUpKey)
-	mapper[runekey] = '8'
+	mapper[runekey] = UpCode
 }
 
 func setDown(mapper map[rune]rune, key string) {
 	runekey := getRuneKey(key, DefaultDownKey)
-	mapper[runekey] = '2'
+	mapper[runekey] = DownCode
 }
 
 func setLeft(mapper map[rune]rune, key string) {
 	runekey := getRuneKey(key, DefaultLeftKey)
-	mapper[runekey] = '4'
+	mapper[runekey] = LeftCode
 }
 
 func setRight(mapper map[rune]rune, key string) {
 	runekey := getRuneKey(key, DefaultRightKey)
-	mapper[runekey] = '6'
+	mapper[runekey] = RightCode
 }
 
 func setBlock(mapper map[rune]rune, key string) {
 	runekey := getRuneKey(key, DefaultBlockKey)
-	mapper[runekey] = '5'
+	mapper[runekey] = BlockCode
+}
+
+func printMapping(mapper map[rune]rune) {
+	codes := []rune{UpCode, DownCode, LeftCode, RightCode, BlockCode}
+	names := []string{"Up   ", "Down ", "Left ", "Right", "Block"}
+	for i, c := range codes {
+		for k, v := range mapper {
+			if c == v {
+				fmt.Println(names[i], "=>", string(k))
+			}
+		}
+	}
 }
 
 func exists(filename string) bool {
@@ -121,6 +139,8 @@ func main() {
 		return
 	}
 	defer c.Close()
+
+	printMapping(mapper)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
