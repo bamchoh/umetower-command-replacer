@@ -84,6 +84,15 @@ func getConfig(filename string) config {
 	return config
 }
 
+func isCommand(comment string, mapper map[rune]rune) bool {
+	for _, c := range comment {
+		if _, ok := mapper[c]; ok == false {
+			return false
+		}
+	}
+	return true
+}
+
 func main() {
 	configfile := "config.json"
 	var config config
@@ -118,13 +127,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		comment := scanner.Text()
-		command := true
-		for _, c := range comment {
-			if _, ok := mapper[c]; ok == false {
-				command = false
-				break
-			}
-		}
+		command := isCommand(comment, mapper)
 
 		if command {
 			for key, val := range mapper {
