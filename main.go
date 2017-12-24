@@ -19,11 +19,11 @@ var (
 	DefaultRightKey = "l"
 	DefaultBlockKey = " "
 
-	UpCode    = '8'
-	DownCode  = '2'
-	LeftCode  = '4'
-	RightCode = '6'
-	BlockCode = '5'
+	DownCode  = byte(0)
+	LeftCode  = byte(1)
+	RightCode = byte(2)
+	UpCode    = byte(3)
+	BlockCode = byte(4)
 )
 
 type config struct {
@@ -42,33 +42,33 @@ func getRuneKey(key string, defaultKey string) rune {
 	return rune(key[0])
 }
 
-func setUp(mapper map[rune]rune, key string) {
+func setUp(mapper map[rune]byte, key string) {
 	runekey := getRuneKey(key, DefaultUpKey)
 	mapper[runekey] = UpCode
 }
 
-func setDown(mapper map[rune]rune, key string) {
+func setDown(mapper map[rune]byte, key string) {
 	runekey := getRuneKey(key, DefaultDownKey)
 	mapper[runekey] = DownCode
 }
 
-func setLeft(mapper map[rune]rune, key string) {
+func setLeft(mapper map[rune]byte, key string) {
 	runekey := getRuneKey(key, DefaultLeftKey)
 	mapper[runekey] = LeftCode
 }
 
-func setRight(mapper map[rune]rune, key string) {
+func setRight(mapper map[rune]byte, key string) {
 	runekey := getRuneKey(key, DefaultRightKey)
 	mapper[runekey] = RightCode
 }
 
-func setBlock(mapper map[rune]rune, key string) {
+func setBlock(mapper map[rune]byte, key string) {
 	runekey := getRuneKey(key, DefaultBlockKey)
 	mapper[runekey] = BlockCode
 }
 
-func printMapping(mapper map[rune]rune) {
-	codes := []rune{UpCode, DownCode, LeftCode, RightCode, BlockCode}
+func printMapping(mapper map[rune]byte) {
+	codes := []byte{UpCode, DownCode, LeftCode, RightCode, BlockCode}
 	names := []string{"Up   ", "Down ", "Left ", "Right", "Block"}
 	for i, c := range codes {
 		for k, v := range mapper {
@@ -100,13 +100,56 @@ func getConfig(filename string) config {
 	return config
 }
 
-func isCommand(comment string, mapper map[rune]rune) bool {
+func isCommand(comment string, mapper map[rune]byte) bool {
 	for _, c := range comment {
 		if _, ok := mapper[c]; ok == false {
 			return false
 		}
 	}
 	return true
+}
+
+func buildCommandMessage(basemsg []byte, keystat byte, opcode byte) []byte {
+	cmd := make([]byte, 0)
+	basemsg = append(basemsg, keystat)
+	basemsg = append(basemsg, opcode)
+	cmd = append(cmd, byte(len(basemsg)+1))
+	cmd = append(cmd, basemsg...)
+	return cmd
+}
+
+func sendCommand(conn *websocket.Conn, id, comment string, mapper map[rune]byte) (err error) {
+	for key, val := range mapper {
+		comment = strings.Replace(comment, string(key), string(val), -1)
+	}
+
+	msg := make([]byte, 0)
+	msg = append(msg, id...)
+	for _, c := range comment {
+		opcode := byte(c)
+		keydownmsg := buildCommandMessage(msg, byte(1), opcode)
+		fmt.Println(keydownmsg)
+		err = conn.WriteMessage(websocket.BinaryMessage, []byte(keydownmsg))
+		if err != nil {
+			return err
+		}
+		keyupmsg := buildCommandMessage(msg, byte(0), opcode)
+		fmt.Println(keyupmsg)
+		err = conn.WriteMessage(websocket.BinaryMessage, []byte(keyupmsg))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func sendComment(conn *websocket.Conn, id, comment string) (err error) {
+	text := id + "\t" + comment
+	err = conn.WriteMessage(websocket.TextMessage, []byte(text))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
@@ -116,7 +159,7 @@ func main() {
 		config = getConfig(configfile)
 	}
 
-	mapper := make(map[rune]rune, 0)
+	mapper := make(map[rune]byte, 0)
 	setUp(mapper, config.Up)
 	setDown(mapper, config.Down)
 	setLeft(mapper, config.Left)
@@ -147,20 +190,15 @@ func main() {
 		comment := scanner.Text()
 		command := isCommand(comment, mapper)
 
+		var err error
 		if command {
-			for key, val := range mapper {
-				comment = strings.Replace(comment, string(key), string(val), -1)
-			}
+			err = sendCommand(c, id, comment, mapper)
+		} else {
+			err = sendComment(c, id, comment)
 		}
 
-		fmt.Println("send:" + comment)
-		text := id + "\t" + comment
-
-		err = c.WriteMessage(websocket.TextMessage, []byte(text))
 		if err != nil {
-			log.Fatal("write:", err)
-			return
+			log.Fatal(err)
 		}
 	}
-
 }
