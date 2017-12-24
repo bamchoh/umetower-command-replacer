@@ -33,8 +33,6 @@ func getRuneKey(key string, defaultKey string) rune {
 		key = defaultKey
 	}
 
-	fmt.Println(key)
-
 	return rune(key[0])
 }
 
